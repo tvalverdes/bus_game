@@ -1,6 +1,7 @@
 import pygame
 import random
 import time
+import json
 
 # Inicialización de pygame
 pygame.init()
@@ -104,6 +105,7 @@ def update_objects():
         if item.top > HEIGHT:
             items.remove(item)
         if bus_rect.colliderect(item):
+            pygame.mixer.Sound("assets/sounds/coin.mp3").play()
             score += 10
             items.remove(item)
 
@@ -157,6 +159,39 @@ def show_game_over_menu():
                     return False  # Cancelar el juego
 
 
+def save_score(puntaje, nombre):
+    nuevo_puntaje = {"nombre": nombre, "puntaje": puntaje}
+    try:
+        with open("puntajes.json", "r") as archivo:
+            puntajes = json.load(archivo)
+    except FileNotFoundError:
+        puntajes = []
+
+    puntajes.append(nuevo_puntaje)
+
+    with open("puntajes.json", "w") as archivo:
+        json.dump(puntajes, archivo, indent=4)
+
+
+def get_score():
+    try:
+        with open("puntajes.json", "r") as archivo:
+            puntajes = json.load(archivo)
+    except FileNotFoundError:
+        # Si no se encuentra el archivo, lo creamos vacío
+        puntajes = []
+        with open("puntajes.json", "w") as archivo:
+            json.dump(puntajes, archivo, indent=4)
+    except json.JSONDecodeError:
+        # Si el archivo está vacío o tiene formato incorrecto, reiniciamos el archivo
+        puntajes = []
+        with open("puntajes.json", "w") as archivo:
+            json.dump(puntajes, archivo, indent=4)
+
+    for i, puntaje in enumerate(puntajes, 1):
+        print(f"{i}. {puntaje['nombre']} - {puntaje['puntaje']}")
+
+
 # Función para mostrar la pantalla final
 def show_end_screen(message):
     text = end_font.render(message, True, WHITE)
@@ -187,6 +222,7 @@ def show_end_screen(message):
 
 # Función para mostrar la lista de puntuaciones
 def show_high_scores():
+    print(get_score())
     screen.fill(BLACK)
     title_text = end_font.render("Puntuaciones Altas", True, WHITE)
     title_rect = title_text.get_rect(center=(WIDTH // 2, 50))
@@ -284,6 +320,7 @@ def main():
             for obstacle in obstacles:
                 if bus_rect.colliderect(obstacle):
                     if not invulnerable:
+                        pygame.mixer.Sound("assets/sounds/obstacle.mp3").play()
                         lives -= 1
                         invulnerable = True
                         invulnerability_timer = pygame.time.get_ticks()
@@ -302,10 +339,9 @@ def main():
         else:
             if not show_game_over_menu():
                 running = False
-
         pygame.display.flip()
         clock.tick(FPS)
-
+    save_score(score, player_name)
     pygame.quit()
 
 
